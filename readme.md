@@ -1,5 +1,7 @@
 # Simple Router for php >= 5.5.
 
+[![Build Status](https://travis-ci.org/incluirtecnologia/SimpleRouter.svg?branch=master)](https://travis-ci.org/incluirtecnologia/SimpleRouter)
+
 ## How to Install:
 `composer require 'intec/simple-router';`
 ## How to Use:
