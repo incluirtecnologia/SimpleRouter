@@ -13,9 +13,15 @@ class SimpleRouter
     {
 
     }
+
+	private static function buildPattern($pattern)
+	{
+		return '/^' . str_replace('/', '\/', $pattern) . '$/';
+	}
+
     public static function add($pattern, callable $callback)
     {
-        $pattern = '/^' . str_replace('/', '\/', $pattern) . '$/';
+        $pattern = self::buildPattern($pattern);
         self::$routes[$pattern] = $callback;
     }
     public static function match($str)
@@ -44,13 +50,20 @@ class SimpleRouter
     }
     public static function setRoutes($routes = [])
     {
+		self::clear();
+
         foreach ($routes as $route) {
             self::add($route['pattern'], $route['callback']);
         }
     }
 
+	public static function clear()
+	{
+		self::$routes = [];
+	}
+
 	public static function hasRoute($pattern)
 	{
-		return in_array($pattern, self::$routes);
+		return array_key_exists(self::buildPattern($pattern), self::$routes);
 	}
 }
