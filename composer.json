@@ -1,0 +1,23 @@
+{
+    "name": "intec/simple-router",
+    "description": "A simple router for small php projects",
+    "type": "library",
+    "license": "MIT",
+	"keywords": ["php", "small router"],
+    "authors": [
+        {
+            "name": "Márcio Dias",
+            "email": "marciojr91@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+	"require": {
+        "php": ">=5.6.0"
+    },
+	"require-dev": {
+        "phpunit/phpunit": "4.0.*"
+    },
+	"autoload": {
+        "psr-4": {"Intec\\Router\\": "src"}
+    }
+}
