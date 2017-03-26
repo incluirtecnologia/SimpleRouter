@@ -1,8 +1,8 @@
-Simple Router for php >= 5.5.
+# Simple Router for php >= 5.5.
 
-How to Install:
-	composer require 'intec/simple-router';
-How to Use:
+## How to Install:
+`composer require 'intec/simple-router';`
+## How to Use:
 
 ```php
 use LibrasSAC\Router\SimpleRouter;
