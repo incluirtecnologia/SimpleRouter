@@ -19,7 +19,7 @@ SimpleRouter::match('/hello');
 
 // add route '/hello/<string>'
 SimpleRouter::add('/hello/([a-zA-Z]*)', function($request){
-    $name = request->getUrlParams()[0];
+	$name = request->getUrlParams()[0];
 	echo "Hello $name!";
 });
 
@@ -30,18 +30,18 @@ SimpleRouter::match('/hello/jorge');
 SimpleRouter::setRoutes([
 	[
 		'pattern' => '/my/name/is/([a-zA-Z]*)',
-        'middlewares' => [
-            function(request) {
-                // middleware stuff
-                // if you want to block the request at this point
-                // you will need to use a redirect or exit.
-                // Otherwise the router will call the next middleware
-            },
-            function($request) {
-                // middleware 2
-                // if you want to block the request at this point
-                // you will need to use a redirect or exit
-            }
+        	'middlewares' => [
+		    function(request) {
+			// middleware stuff
+			// if you want to block the request at this point
+			// you will need to use a redirect or exit.
+			// Otherwise the router will call the next middleware
+		    },
+		    function($request) {
+			// middleware 2
+			// if you want to block the request at this point
+			// you will need to use a redirect or exit
+		    }
         ]
 		'callback' => function($request) {
             $name = request->getUrlParams()[0];
