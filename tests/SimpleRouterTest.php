@@ -25,10 +25,6 @@ class NachoTest extends PHPUnit_Framework_TestCase {
 			return 'not-e';
 		});
 
-		SimpleRouter::add('/not-empty', function(){
-			return 'not-e';
-		});
-
 		$this->assertEquals(SimpleRouter::match('/empty'), 'empty');
 		$this->assertNotEquals(SimpleRouter::match('/not-empty'), 'not-empty');
 	}
