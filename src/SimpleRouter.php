@@ -5,6 +5,7 @@ namespace Intec\Router;
 class SimpleRouter
 {
     private static $routes = [];
+    private static $defaultMiddlewares = [];
     const ROUTE_NOT_FOUND = '/404';
 
     private function __construct()
@@ -16,10 +17,15 @@ class SimpleRouter
 
     }
 
-	private static function buildPattern($pattern)
-	{
-		return '/^' . str_replace('/', '\/', $pattern) . '$/';
-	}
+    private static function buildPattern($pattern)
+    {
+        return '/^' . str_replace('/', '\/', $pattern) . '$/';
+    }
+
+    private static function setDefaultMiddlewares($middlewares)
+    {
+        self::$defaultMiddlewares = $middlewares;
+    }
 
     public static function add($pattern, callable $callback, array $middlewares = [])
     {
@@ -47,6 +53,11 @@ class SimpleRouter
             }
         } else {
             $url = $str;
+        }
+
+        // default Middlewares
+        while($mid = array_shift(self::$defaultMiddlewares)) {
+            $mid($request);
         }
 
         foreach (self::$routes as $pattern => $obj) {
