@@ -22,7 +22,7 @@ class SimpleRouter
         return '/^' . str_replace('/', '\/', $pattern) . '$/';
     }
 
-    private static function setDefaultMiddlewares($middlewares)
+    public static function setDefaultMiddlewares($middlewares)
     {
         self::$defaultMiddlewares = $middlewares;
     }
