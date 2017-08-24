@@ -6,7 +6,8 @@ class SimpleRouter
 {
     private static $routes = [];
     private static $defaultMiddlewares = [];
-	private static $fallback;
+	private static $notFoundFallback;
+    private static $errorFallback;
 
     private function __construct()
     {
@@ -17,10 +18,15 @@ class SimpleRouter
 
     }
 
-	public static function setFallback($fallback)
+	public static function setNotFoundFallback(callable $fallback)
 	{
-		self::$fallback = $fallback;
+		self::$notFoundFallback = $fallback;
 	}
+
+    public static function setErrorFallback(callable $fallback)
+    {
+        self::$errorFallback = $fallback;
+    }
 
     private static function buildPattern($pattern)
     {
@@ -72,13 +78,22 @@ class SimpleRouter
                 while($mid = array_shift($obj['middlewares'])) {
                     $mid($request);
                 }
-                $obj['callback']($request);
+
+                try {
+                    $obj['callback']($request);
+                } catch(\Throwable $err) {
+                    $fbck = self::$errorFallback;
+                    if($fbck) {
+            	        $fbck($request, $err);
+            		}
+                }
                 return;
             }
         }
 
-		if(self::$fallback) {
-	        self::$fallback($request);
+        $fbck = self::$notFoundFallback;
+		if($fbck) {
+	        $fbck($request);
 		}
     }
 
