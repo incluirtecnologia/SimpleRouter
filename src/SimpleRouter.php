@@ -6,7 +6,7 @@ class SimpleRouter
 {
     private static $routes = [];
     private static $defaultMiddlewares = [];
-    const ROUTE_NOT_FOUND = '/404';
+	private static $fallback;
 
     private function __construct()
     {
@@ -16,6 +16,11 @@ class SimpleRouter
     {
 
     }
+
+	public static function setFallback($fallback)
+	{
+		self::$fallback = $fallback;
+	}
 
     private static function buildPattern($pattern)
     {
@@ -71,12 +76,10 @@ class SimpleRouter
                 return;
             }
         }
-        if($request->isXmlHttpRequest()) {
-            http_response_code(404);
-            exit;
-        } else {
-            self::redirectTo(self::ROUTE_NOT_FOUND);
-        }
+
+		if(self::$fallback) {
+	        self::$fallback($request);
+		}
     }
 
     public static function setRoutes($routes = [])
