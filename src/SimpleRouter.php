@@ -97,10 +97,14 @@ class SimpleRouter
 		}
     }
 
-    public static function setRoutes($routes = [])
+    public static function setRoutes(array $routes)
     {
 		self::clear();
+        self::addRoutes($routes);
+    }
 
+    public function addRoutes(array $routes)
+    {
         foreach ($routes as $route) {
             if(empty($route['middlewares'])) {
                 self::add($route['pattern'], $route['callback']);
