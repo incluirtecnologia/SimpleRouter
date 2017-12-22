@@ -7,6 +7,7 @@ class Request
 {
     protected $queryParams;
     protected $postParams;
+	protected $filesParams;
     protected $urlParams;
     protected $isXHttp;
 
@@ -16,8 +17,10 @@ class Request
     {
         $this->queryParams = [];
         $this->postParams = [];
+		$this->filesParams = [];
         $this->urlParams = [];
         $this->parsePost();
+		$this->parseFiles();
         $this->isXHttp = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == self::XML_HTTP_REQUEST;
     }
 
@@ -36,10 +39,20 @@ class Request
         $this->postParams = $_POST;
     }
 
+	private function parseFiles()
+	{
+		$this->filesParams = $_FILES;
+	}
+
     public function getPostParams()
     {
         return $this->postParams;
     }
+
+	public function getFilesParams()
+	{
+		return $this->filesParams;
+	}
 
     public function parseUrlParams($params)
     {
