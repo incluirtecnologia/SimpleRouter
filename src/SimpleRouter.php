@@ -103,7 +103,7 @@ class SimpleRouter
         self::addRoutes($routes);
     }
 
-    public function addRoutes(array $routes)
+    public static function addRoutes(array $routes)
     {
         foreach ($routes as $route) {
             if(empty($route['middlewares'])) {
