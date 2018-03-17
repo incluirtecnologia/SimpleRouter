@@ -2,7 +2,7 @@
 
 use Intec\Router\SimpleRouter;
 
-class NachoTest extends PHPUnit_Framework_TestCase {
+class SimpleRouterTest extends PHPUnit_Framework_TestCase {
 
 	public function testHasRoute()
 	{
