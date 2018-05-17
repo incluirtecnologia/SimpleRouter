@@ -10,6 +10,8 @@
 namespace Intec\Router;
 
 use RuntimeException;
+use Psr\Container\ContainerInterface;
+use Intec\Router\Interfaces\CallableInterface;
 
 /**
  * This class resolves a string of the format 'class:method' into a closure
