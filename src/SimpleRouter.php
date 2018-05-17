@@ -5,7 +5,9 @@ namespace Intec\Router;
 use Exception;
 use Intec\Router\CallableResolver;
 
-use Pimple\Container;
+use Pimple\Container as PimpleContainer;
+use Pimple\Psr11\Container;
+use Psr\Container\ContainerInterface;
 
 class SimpleRouter
 {
@@ -53,12 +55,12 @@ class SimpleRouter
         ];
     }
 
-    public static function match($str, Container $pimpleContainer = null)
+    public static function match($str, ContainerInterface $pimpleContainer = null)
     {
         $request = new Request();
 
         if(!$pimpleContainer) {
-            $pimpleContainer = new Container();
+            $pimpleContainer = new Container(new PimpleContainer());
         }
 
         self::$container = $pimpleContainer;
