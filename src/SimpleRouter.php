@@ -24,12 +24,12 @@ class SimpleRouter
 
     }
 
-	public static function setNotFoundFallback(callable $fallback)
+	public static function setNotFoundFallback($fallback)
 	{
 		self::$notFoundFallback = $fallback;
 	}
 
-    public static function setErrorFallback(callable $fallback)
+    public static function setErrorFallback($fallback)
     {
         self::$errorFallback = $fallback;
     }
@@ -44,7 +44,7 @@ class SimpleRouter
         self::$defaultMiddlewares = $middlewares;
     }
 
-    public static function add($pattern, callable $callback, array $middlewares = [])
+    public static function add($pattern, $callback, array $middlewares = [])
     {
         $pattern = self::buildPattern($pattern);
         self::$routes[$pattern] = [
