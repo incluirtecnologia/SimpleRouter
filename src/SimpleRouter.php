@@ -2,12 +2,18 @@
 
 namespace Intec\Router;
 
+use Exception;
+use Intec\Router\CallableResolver;
+
+use Pimple\Container;
+
 class SimpleRouter
 {
     private static $routes = [];
     private static $defaultMiddlewares = [];
 	private static $notFoundFallback;
     private static $errorFallback;
+    private static $container;
 
     private function __construct()
     {
@@ -47,9 +53,17 @@ class SimpleRouter
         ];
     }
 
-    public static function match($str)
+    public static function match($str, Container $pimpleContainer = null)
     {
         $request = new Request();
+
+        if(!$pimpleContainer) {
+            $pimpleContainer = new Container();
+        }
+
+        self::$container = $pimpleContainer;
+
+        $callableResolver = new CallableResolver($pimpleContainer);
 
         if (strlen($str) > 1) {
             $str = rtrim($str, '/\\');
@@ -58,7 +72,6 @@ class SimpleRouter
                 $url = substr($str, 0, $pos);
                 $queryString = substr($str, $pos + 1);
                 $request->parseQueryParams($queryString);
-
             } else {
                 $url = $str;
             }
@@ -68,23 +81,28 @@ class SimpleRouter
 
         // default Middlewares
         while($mid = array_shift(self::$defaultMiddlewares)) {
-            $mid($request);
+            $callable = $callableResolver->resolve($mid);
+            call_user_func($callable, $request);
         }
 
         foreach (self::$routes as $pattern => $obj) {
             if (preg_match($pattern, $url, $params)) {
                 array_shift($params);
                 $request->parseUrlParams($params);
+                
                 while($mid = array_shift($obj['middlewares'])) {
-                    $mid($request);
+                    $callable = $callableResolver->resolve($mid);
+                    call_user_func($callable, $request);
                 }
 
                 try {
-                    $obj['callback']($request);
+                    $callable = $callableResolver->resolve($obj['callback']);
+                    call_user_func($callable, $request);
                 } catch(\Throwable $err) {
                     $fbck = self::$errorFallback;
                     if($fbck) {
-            	        $fbck($request, $err);
+                        $callable = $callableResolver->resolve($fbck);
+                        call_user_func($callable, $request, $err);
             		}
                 }
                 return;
@@ -93,8 +111,22 @@ class SimpleRouter
 
         $fbck = self::$notFoundFallback;
 		if($fbck) {
-	        $fbck($request);
+            $callable = $callableResolver->resolve($fbck);
+            call_user_func($callable, $request);
 		}
+    }
+
+    private static function resolve($fn)
+    {
+        if(is_callable($fn)) {
+            return $fn;
+        }
+
+        if(!is_string($fn)) {
+            self::assertCallable($fn);
+            throw new Exception(sprintf("%s not exists"), json_encode($fn));
+        }
+
     }
 
     public static function setRoutes(array $routes)
@@ -128,5 +160,10 @@ class SimpleRouter
     {
         header('Location: ' . $route);
         exit;
+    }
+
+    public static function getContainer()
+    {
+        return self::$container;
     }
 }
