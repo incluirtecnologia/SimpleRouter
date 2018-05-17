@@ -10,8 +10,8 @@
 namespace Intec\Router;
 
 use RuntimeException;
-use Psr\Container\ContainerInterface;
-use Intec\Router\Interfaces\CallableInterface;
+use Pimple\Container;
+use Intec\Router\Interfaces\CallableResolverInterface;
 
 /**
  * This class resolves a string of the format 'class:method' into a closure
@@ -21,13 +21,13 @@ final class CallableResolver implements CallableResolverInterface
 {
     const CALLABLE_PATTERN = '!^([^\:]+)\:([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$!';
     /**
-     * @var ContainerInterface
+     * @var Container
      */
     private $container;
     /**
-     * @param ContainerInterface $container
+     * @param Container $container
      */
-    public function __construct(ContainerInterface $container)
+    public function __construct(Container $container)
     {
         $this->container = $container;
     }
