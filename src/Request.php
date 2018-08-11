@@ -34,7 +34,7 @@ final class Request extends SlimRequest
 
     public function isXmlHttpRequest()
     {
-        // trigger_error('Deprecated function called, use substr(\'application/json\', $request->getHeaderLine(\'accept\') instead', E_USER_DEPRECATED);
-        return substr('application/json', $this->getHeaderLine('accept'));
+        // trigger_error('Deprecated function called, use (false !== strpos($request->getHeaderLine('accept'), 'application/json')) instead', E_USER_DEPRECATED);
+        return false !== strpos($this->getHeaderLine('accept'), 'application/json');
     }
 }
