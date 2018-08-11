@@ -1,71 +1,40 @@
 <?php
 
-
 namespace Intec\Router;
 
-class Request
+use Slim\Http\Request as SlimRequest;
+
+final class Request extends SlimRequest
 {
-    protected $queryParams;
-    protected $postParams;
-	protected $filesParams;
-    protected $urlParams;
-    protected $isXHttp;
 
-    const XML_HTTP_REQUEST = 'xmlhttprequest';
-
-    public function __construct()
-    {
-        $this->queryParams = [];
-        $this->postParams = [];
-		$this->filesParams = [];
-        $this->urlParams = [];
-        $this->parsePost();
-		$this->parseFiles();
-        $this->isXHttp = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == self::XML_HTTP_REQUEST;
-    }
-
-    public function parseQueryParams($queryString)
-    {
-        parse_str($queryString, $this->queryParams);
-    }
-
-    public function getQueryParams()
-    {
-        return $this->queryParams;
-    }
-
-    private function parsePost()
-    {
-        $this->postParams = $_POST;
-    }
-
-	private function parseFiles()
-	{
-		$this->filesParams = $_FILES;
-	}
+    private $urlParams = [];
 
     public function getPostParams()
     {
-        return $this->postParams;
+        // trigger_error('Deprecated function called, use \'getParsedBody()\' instead.', E_USER_DEPRECATED);
+        return $this->getParsedBody();
     }
 
-	public function getFilesParams()
-	{
-		return $this->filesParams;
-	}
+    public function getFilesParams()
+    {
+        // trigger_error('Deprecated function called, use \'getUploadedFiles()\' instead.', E_USER_DEPRECATED);
+        return $_FILES;
+    }
 
-    public function parseUrlParams($params)
+    public function setUrlParams(array $params)
     {
         $this->urlParams = $params;
     }
 
     public function getUrlParams()
     {
+        // trigger_error('Deprecated function called, use the 3rd parameter in controller method \'public function myAction($request, $response, $params)\' instead.', E_USER_DEPRECATED);
         return $this->urlParams;
     }
 
     public function isXmlHttpRequest()
     {
-        return $this->isXHttp;
+        // trigger_error('Deprecated function called, use substr(\'application/json\', $request->getHeaderLine(\'accept\') instead', E_USER_DEPRECATED);
+        return substr('application/json', $this->getHeaderLine('accept'));
     }
 }

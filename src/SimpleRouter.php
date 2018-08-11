@@ -8,28 +8,28 @@ use Intec\Router\CallableResolver;
 use Pimple\Container as PimpleContainer;
 use Pimple\Psr11\Container;
 use Psr\Container\ContainerInterface;
+use Intec\Router\Request;
+use Intec\Router\Response;
 
 class SimpleRouter
 {
     private static $routes = [];
     private static $defaultMiddlewares = [];
-	private static $notFoundFallback;
+    private static $notFoundFallback;
     private static $errorFallback;
     private static $container;
 
     private function __construct()
     {
-
     }
     private function __clone()
     {
-
     }
 
-	public static function setNotFoundFallback($fallback)
-	{
-		self::$notFoundFallback = $fallback;
-	}
+    public static function setNotFoundFallback($fallback)
+    {
+        self::$notFoundFallback = $fallback;
+    }
 
     public static function setErrorFallback($fallback)
     {
@@ -57,90 +57,107 @@ class SimpleRouter
 
     public static function match($str, ContainerInterface $pimpleContainer = null)
     {
-        $request = new Request();
+        self::run($pimpleContainer);
+    }
 
-        if(!$pimpleContainer) {
+    public static function run(ContainerInterface $pimpleContainer = null)
+    {
+        $request = Request::createFromGlobals($_SERVER);
+        $response = new Response();
+
+        if (!$pimpleContainer) {
             $pimpleContainer = new Container(new PimpleContainer());
         }
 
         self::$container = $pimpleContainer;
-
         $callableResolver = new CallableResolver($pimpleContainer);
 
-        if (strlen($str) > 1) {
-            $str = rtrim($str, '/\\');
-            $pos = strpos($str, '?');
-           if ($pos !== false) {
-                $url = substr($str, 0, $pos);
-                $queryString = substr($str, $pos + 1);
-                $request->parseQueryParams($queryString);
-            } else {
-                $url = $str;
-            }
-        } else {
-            $url = $str;
-        }
+        return self::matchRequest($request, $response, $callableResolver);
+    }
 
-        // default Middlewares
-        while($mid = array_shift(self::$defaultMiddlewares)) {
-            $callable = $callableResolver->resolve($mid);
-            call_user_func($callable, $request);
-        }
+    private static function matchRequest($request, $response, $callableResolver)
+    {
+        try {
+            $path = $request->getUri()->getPath();
+            foreach (self::$routes as $pattern => $obj) {
+                if (preg_match($pattern, $path, $params)) {
+                    array_shift($params);
+                    $request->setUrlParams($params);
 
-        foreach (self::$routes as $pattern => $obj) {
-            if (preg_match($pattern, $url, $params)) {
-                array_shift($params);
-                $request->parseUrlParams($params);
-                
-                while($mid = array_shift($obj['middlewares'])) {
-                    $callable = $callableResolver->resolve($mid);
-                    call_user_func($callable, $request);
-                }
+                    // Middlewares
+                    $middlewares = array_merge(self::$defaultMiddlewares, $obj['middlewares']);
+                    while ($mid = array_shift($middlewares)) {
+                        $callable = $callableResolver->resolve($mid);
+                        call_user_func($callable, $request, $response);
+                    }
 
-                try {
+                    // Controller
                     $callable = $callableResolver->resolve($obj['callback']);
-                    call_user_func($callable, $request);
-                } catch(\Throwable $err) {
-                    $fbck = self::$errorFallback;
-                    if($fbck) {
-                        $callable = $callableResolver->resolve($fbck);
-                        call_user_func($callable, $request, $err);
-            		}
+                    $response = call_user_func($callable, $request, $response, $params);
+                    self::sendResponse($response);
+                    exit;
                 }
-                return;
+            }
+
+            // 404 Middleware
+            $fbck = self::$notFoundFallback;
+            if ($fbck) {
+                $callable = $callableResolver->resolve($fbck);
+                call_user_func($callable, $request, $response);
+            }
+        } catch (\Throwable $err) {
+            $fbck = self::$errorFallback;
+            if ($fbck) {
+                $callable = $callableResolver->resolve($fbck);
+                call_user_func($callable, $request, $response);
             }
         }
+    }
 
-        $fbck = self::$notFoundFallback;
-		if($fbck) {
-            $callable = $callableResolver->resolve($fbck);
-            call_user_func($callable, $request);
-		}
+    private static function sendResponse($response)
+    {
+        if (headers_sent()) {
+            throw new RuntimeException('Headers were already sent. The response could not be emitted!');
+        }
+
+        $statusLine = sprintf(
+            'HTTP/%s %s %s',
+            $response->getProtocolVersion(),
+            $response->getStatusCode(),
+            $response->getReasonPhrase()
+        );
+        header($statusLine, true);
+
+        foreach ($response->getHeaders() as $name => $values) {
+            $responseHeader = sprintf('%s: %s', $name, $response->getHeaderLine($name));
+            header($responseHeader, false);
+        }
+
+        echo $response->getBody();
     }
 
     private static function resolve($fn)
     {
-        if(is_callable($fn)) {
+        if (is_callable($fn)) {
             return $fn;
         }
 
-        if(!is_string($fn)) {
+        if (!is_string($fn)) {
             self::assertCallable($fn);
             throw new Exception(sprintf("%s not exists"), json_encode($fn));
         }
-
     }
 
     public static function setRoutes(array $routes)
     {
-		self::clear();
+        self::clear();
         self::addRoutes($routes);
     }
 
     public static function addRoutes(array $routes)
     {
         foreach ($routes as $route) {
-            if(empty($route['middlewares'])) {
+            if (empty($route['middlewares'])) {
                 self::add($route['pattern'], $route['callback']);
             } else {
                 self::add($route['pattern'], $route['callback'], $route['middlewares']);
@@ -148,15 +165,15 @@ class SimpleRouter
         }
     }
 
-	public static function clear()
-	{
-		self::$routes = [];
-	}
+    public static function clear()
+    {
+        self::$routes = [];
+    }
 
-	public static function hasRoute($pattern)
-	{
-		return array_key_exists(self::buildPattern($pattern), self::$routes);
-	}
+    public static function hasRoute($pattern)
+    {
+        return array_key_exists(self::buildPattern($pattern), self::$routes);
+    }
 
     public static function redirectTo($route)
     {
