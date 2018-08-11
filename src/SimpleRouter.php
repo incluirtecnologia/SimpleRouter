@@ -94,7 +94,9 @@ class SimpleRouter
                     // Controller
                     $callable = $callableResolver->resolve($obj['callback']);
                     $response = call_user_func($callable, $request, $response, $params);
-                    self::sendResponse($response);
+                    if($response) {
+                        self::sendResponse($response);
+                    }
                     exit;
                 }
             }
@@ -109,7 +111,7 @@ class SimpleRouter
             $fbck = self::$errorFallback;
             if ($fbck) {
                 $callable = $callableResolver->resolve($fbck);
-                call_user_func($callable, $request, $response);
+                call_user_func($callable, $request, $response, null, $err);
             }
         }
     }
