@@ -88,16 +88,16 @@ class SimpleRouter
                     $middlewares = array_merge(self::$defaultMiddlewares, $obj['middlewares']);
                     while ($mid = array_shift($middlewares)) {
                         $callable = $callableResolver->resolve($mid);
-                        call_user_func($callable, $request, $response);
+                        $response = call_user_func($callable, $request, $response);
+                        if(!$response) {
+                            exit;
+                        }
                     }
 
                     // Controller
                     $callable = $callableResolver->resolve($obj['callback']);
                     $response = call_user_func($callable, $request, $response, $params);
-                    if($response) {
-                        self::sendResponse($response);
-                    }
-                    exit;
+                    self::sendResponse($response);
                 }
             }
 
@@ -105,21 +105,23 @@ class SimpleRouter
             $fbck = self::$notFoundFallback;
             if ($fbck) {
                 $callable = $callableResolver->resolve($fbck);
-                call_user_func($callable, $request, $response);
+                $response = call_user_func($callable, $request, $response);
+                self::sendResponse($response);
             }
         } catch (\Throwable $err) {
             $fbck = self::$errorFallback;
             if ($fbck) {
                 $callable = $callableResolver->resolve($fbck);
-                call_user_func($callable, $request, $response, null, $err);
+                $response = call_user_func($callable, $request, $response, null, $err);
+                self::sendResponse($response);
             }
         }
     }
 
     private static function sendResponse($response)
     {
-        if (headers_sent()) {
-            throw new RuntimeException('Headers were already sent. The response could not be emitted!');
+        if (headers_sent() || !$response) {
+            exit;
         }
 
         $statusLine = sprintf(
@@ -136,6 +138,7 @@ class SimpleRouter
         }
 
         echo $response->getBody();
+        exit;
     }
 
     private static function resolve($fn)
