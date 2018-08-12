@@ -22,9 +22,9 @@ class SimpleRouter
     private static $notFoundFallback;
     private static $errorFallback;
     private static $container;
-    private static $middlewares;
+    private static $middlewares = [];
     private static $callableResolver;
-    private static $urlParams;
+    private static $urlParams = [];
 
     private function __construct()
     {
@@ -81,21 +81,32 @@ class SimpleRouter
         return self::matchRequest($request);
     }
 
+    /**
+     * Middlewares will be executed in the following order:
+     *
+     * 1 - default middlewares FIFO,
+     * 2 - 404,
+     * 3 - 500,
+     * 4 - route specific middlewares,
+     * 5 - controller action wrapped in a middleware
+     *
+     */
     private static function matchRequest($request)
     {
         $path = $request->getUri()->getPath();
         $requestHandler = new RequestHandler();
-        $defMiddlewares = array_merge([self::$errorFallback, self::$notFoundFallback], self::$defaultMiddlewares);
+        self::$middlewares = array_filter(array_merge(self::$defaultMiddlewares, [self::$notFoundFallback, self::$errorFallback]));
         foreach (self::$routes as $pattern => $obj) {
             if (preg_match($pattern, $path, $params)) {
                 array_shift($params);
                 self::$urlParams = $params;
-                // Middlewares 500, 404, default middlewares, route specific middlewares, controller action
-                self::$middlewares = array_filter(array_merge($defMiddlewares, $obj['middlewares'] ?? [], [self::createMiddlewareController($obj['callback'])]));
-                $response = $requestHandler->handle($request);
-                self::sendResponse($response);
+                self::$middlewares = array_merge(self::$middlewares, $obj['middlewares'] ?? [], [self::createMiddlewareController($obj['callback'])]);
+                break;
             }
         }
+
+        $response = $requestHandler->handle($request);
+        self::sendResponse($response);
     }
 
     private static function createMiddlewareController($objectToResolve)

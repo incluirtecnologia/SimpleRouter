@@ -14,7 +14,11 @@ class RequestHandler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return SimpleRouter::nextMiddleware()->process($request, $this);
+        $next = SimpleRouter::nextMiddleware();
+        if($next) {
+            return $next->process($request, $this);
+        }
+        return $this->getResponse();
     }
 
     public function getResponse()
