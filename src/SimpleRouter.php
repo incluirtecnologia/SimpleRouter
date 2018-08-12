@@ -98,7 +98,7 @@ class SimpleRouter
         }
     }
 
-    private function createMiddlewareController($objectToResolve)
+    private static function createMiddlewareController($objectToResolve)
     {
         return new class(self::$callableResolver, $objectToResolve, self::$urlParams) implements MiddlewareInterface {
             private $cResolver;
@@ -121,7 +121,7 @@ class SimpleRouter
         };
     }
 
-    public function nextMiddleware()
+    public static function nextMiddleware()
     {
         if ($mid = array_shift(self::$middlewares)) {
             if(!is_object($mid)) {
@@ -133,12 +133,12 @@ class SimpleRouter
         return null;
     }
 
-    public function createResponse()
+    public static function createResponse()
     {
         return new Response();
     }
 
-    public function getUrlParams()
+    public static function getUrlParams()
     {
         return self::$urlParams;
     }
