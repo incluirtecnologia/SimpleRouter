@@ -96,4 +96,19 @@ final class CallableResolver implements CallableResolverInterface
             ));
         }
     }
+
+    public function resolveMiddleware($toResolve)
+    {
+        if(is_object($toResolve)) {
+            return $toResolve;
+        } else if(is_string($toResolve) && class_exists($toResolve)) {
+            if($this->container->has($toResolve)) {
+                return $this->container->get($toResolve);
+            } else {
+                return new $toResolve($this->container);
+            }
+        }
+
+        throw new RuntimeException(sprintf('Middleware %s is not resolvable', json_encode($toResolve)));
+    }
 }

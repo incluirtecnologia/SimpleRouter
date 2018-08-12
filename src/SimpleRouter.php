@@ -124,10 +124,7 @@ class SimpleRouter
     public static function nextMiddleware()
     {
         if ($mid = array_shift(self::$middlewares)) {
-            if(!is_object($mid)) {
-                return self::$callableResolver->resolve($mid);
-            }
-            return $mid;
+            return self::$callableResolver->resolveMiddleware($mid);
         }
 
         return null;
