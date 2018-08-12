@@ -10,6 +10,10 @@ use Pimple\Psr11\Container;
 use Psr\Container\ContainerInterface;
 use Intec\Router\Request;
 use Intec\Router\Response;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 class SimpleRouter
 {
@@ -18,6 +22,9 @@ class SimpleRouter
     private static $notFoundFallback;
     private static $errorFallback;
     private static $container;
+    private static $middlewares;
+    private static $callableResolver;
+    private static $urlParams;
 
     private function __construct()
     {
@@ -63,59 +70,77 @@ class SimpleRouter
     public static function run(ContainerInterface $pimpleContainer = null)
     {
         $request = Request::createFromGlobals($_SERVER);
-        $response = new Response();
 
         if (!$pimpleContainer) {
             $pimpleContainer = new Container(new PimpleContainer());
         }
 
         self::$container = $pimpleContainer;
-        $callableResolver = new CallableResolver($pimpleContainer);
+        self::$callableResolver = new CallableResolver($pimpleContainer);
 
-        return self::matchRequest($request, $response, $callableResolver);
+        return self::matchRequest($request);
     }
 
-    private static function matchRequest($request, $response, $callableResolver)
+    private static function matchRequest($request)
     {
-        try {
-            $path = $request->getUri()->getPath();
-            foreach (self::$routes as $pattern => $obj) {
-                if (preg_match($pattern, $path, $params)) {
-                    array_shift($params);
-                    $request->setUrlParams($params);
-
-                    // Middlewares
-                    $middlewares = array_merge(self::$defaultMiddlewares, $obj['middlewares']);
-                    while ($mid = array_shift($middlewares)) {
-                        $callable = $callableResolver->resolve($mid);
-                        $response = call_user_func($callable, $request, $response);
-                        if(!$response) {
-                            exit;
-                        }
-                    }
-
-                    // Controller
-                    $callable = $callableResolver->resolve($obj['callback']);
-                    $response = call_user_func($callable, $request, $response, $params);
-                    self::sendResponse($response);
-                }
-            }
-
-            // 404 Middleware
-            $fbck = self::$notFoundFallback;
-            if ($fbck) {
-                $callable = $callableResolver->resolve($fbck);
-                $response = call_user_func($callable, $request, $response);
-                self::sendResponse($response);
-            }
-        } catch (\Throwable $err) {
-            $fbck = self::$errorFallback;
-            if ($fbck) {
-                $callable = $callableResolver->resolve($fbck);
-                $response = call_user_func($callable, $request, $response, null, $err);
+        $path = $request->getUri()->getPath();
+        $requestHandler = new RequestHandler();
+        $defMiddlewares = array_merge([self::$errorFallback, self::$notFoundFallback], self::$defaultMiddlewares);
+        foreach (self::$routes as $pattern => $obj) {
+            if (preg_match($pattern, $path, $params)) {
+                array_shift($params);
+                self::$urlParams = $params;
+                // Middlewares 500, 404, default middlewares, route specific middlewares, controller action
+                self::$middlewares = array_filter(array_merge($defMiddlewares, $obj['middlewares'] ?? [], [self::createMiddlewareController($obj['callback'])]));
+                $response = $requestHandler->handle($request);
                 self::sendResponse($response);
             }
         }
+    }
+
+    private function createMiddlewareController($objectToResolve)
+    {
+        return new class(self::$callableResolver, $objectToResolve, self::$urlParams) implements MiddlewareInterface {
+            private $cResolver;
+            private $objectToResolve;
+            private $urlParams;
+
+            public function __construct($cResolver, $objectToResolve, $urlParams)
+            {
+                $this->cResolver = $cResolver;
+                $this->objectToResolve = $objectToResolve;
+                $this->urlParams = $urlParams;
+            }
+
+            public function process(ServerRequestInterface $request, RequestHandlerInterface $requestHandler) : ResponseInterface
+            {
+                $callable = $this->cResolver->resolve($this->objectToResolve);
+                $response = $requestHandler->getResponse();
+                return call_user_func($callable, $request, $response, $this->urlParams);
+            }
+        };
+    }
+
+    public function nextMiddleware()
+    {
+        if ($mid = array_shift(self::$middlewares)) {
+            if(!is_object($mid)) {
+                return self::$callableResolver->resolve($mid);
+            }
+            return $mid;
+        }
+
+        return null;
+    }
+
+    public function createResponse()
+    {
+        return new Response();
+    }
+
+    public function getUrlParams()
+    {
+        return self::$urlParams;
     }
 
     private static function sendResponse($response)
