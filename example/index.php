@@ -6,7 +6,7 @@ use Intec\Router\SimpleRouter;
 
 SimpleRouter::setRoutes([
     [
-        'pattern' => '/test',
+        'pattern' => '/test/([0-9]+)/([a-z]+)',
         'callback' => function($request, $response, $params) {
             return $response->json(200, 'hello!!!', $params);
         }
