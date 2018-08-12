@@ -18,7 +18,7 @@ class RequestHandler implements RequestHandlerInterface
         if($next) {
             return $next->process($request, $this);
         }
-        return $this->getResponse();
+        return $this->getResponse()->withStatus(404);
     }
 
     public function getResponse()
