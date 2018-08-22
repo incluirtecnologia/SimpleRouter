@@ -56,7 +56,8 @@ class SimpleRouter
     public static function add($pattern, $callback, array $middlewares = [], $method = '*')
     {
         $pattern = self::buildPattern($pattern);
-        self::$routes[$pattern] = [
+        self::$routes[] = [
+            'pattern' => $pattern,
             'callback' => $callback,
             'middlewares' => $middlewares,
             'method' => $method
@@ -98,8 +99,8 @@ class SimpleRouter
         $method = strtolower($request->getMethod());
         $requestHandler = new RequestHandler();
         self::$middlewares = array_filter(array_merge(self::$defaultMiddlewares, [self::$notFoundFallback, self::$errorFallback]));
-        foreach (self::$routes as $pattern => $obj) {
-            if (preg_match($pattern, $path, $params) && ($obj['method'] == '*' || $obj['method'] == $method)) {
+        foreach (self::$routes as $obj) {
+            if (($obj['method'] == '*' || $obj['method'] == $method) && preg_match($obj['pattern'], $path, $params)) {
                 array_shift($params);
                 self::$urlParams = $params;
                 self::$middlewares = array_merge(self::$middlewares, $obj['middlewares'] ?? [], [self::createMiddlewareController($obj['callback'])]);
