@@ -100,6 +100,7 @@ class SimpleRouter
         $requestHandler = new RequestHandler();
         self::$middlewares = array_filter(array_merge(self::$defaultMiddlewares, [self::$notFoundFallback, self::$errorFallback]));
         foreach (self::$routes as $obj) {
+            if($obj['method'] === 'options') break;
             if (($obj['method'] == '*' || $obj['method'] == $method) && preg_match($obj['pattern'], $path, $params)) {
                 array_shift($params);
                 self::$urlParams = $params;
