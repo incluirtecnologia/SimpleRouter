@@ -53,12 +53,13 @@ class SimpleRouter
         self::$defaultMiddlewares = $middlewares;
     }
 
-    public static function add($pattern, $callback, array $middlewares = [])
+    public static function add($pattern, $callback, array $middlewares = [], $method = '*')
     {
         $pattern = self::buildPattern($pattern);
         self::$routes[$pattern] = [
             'callback' => $callback,
             'middlewares' => $middlewares,
+            'method' => $method
         ];
     }
 
@@ -94,10 +95,11 @@ class SimpleRouter
     private static function matchRequest($request)
     {
         $path = $request->getUri()->getPath();
+        $method = strtolower($request->getMethod());
         $requestHandler = new RequestHandler();
         self::$middlewares = array_filter(array_merge(self::$defaultMiddlewares, [self::$notFoundFallback, self::$errorFallback]));
         foreach (self::$routes as $pattern => $obj) {
-            if (preg_match($pattern, $path, $params)) {
+            if (preg_match($pattern, $path, $params) && ($obj['method'] == '*' || $obj['method'] == $method)) {
                 array_shift($params);
                 self::$urlParams = $params;
                 self::$middlewares = array_merge(self::$middlewares, $obj['middlewares'] ?? [], [self::createMiddlewareController($obj['callback'])]);
@@ -198,7 +200,8 @@ class SimpleRouter
             if (empty($route['middlewares'])) {
                 self::add($route['pattern'], $route['callback']);
             } else {
-                self::add($route['pattern'], $route['callback'], $route['middlewares']);
+                $method = isset($route['method']) ? strtolower($route['method']) : '*';
+                self::add($route['pattern'], $route['callback'], $route['middlewares'], $method);
             }
         }
     }
